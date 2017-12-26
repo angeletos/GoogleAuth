@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 Enrico M. Crisostomo
+ * Copyright (c) 2014-2017 Enrico M. Crisostomo
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,8 +41,8 @@ import java.net.URLEncoder;
  * Authenticator application so that it can configure itself with the data
  * contained therein.
  */
-public final class GoogleAuthenticatorQRGenerator {
-    
+public final class GoogleAuthenticatorQRGenerator
+{
     /**
      * The format string to generate the Google Chart HTTP API call.
      */
@@ -59,10 +59,14 @@ public final class GoogleAuthenticatorQRGenerator {
      * @param s The string to URL-encode.
      * @return the URL-encoded string.
      */
-    private static String internalURLEncode(String s) {
-        try {
+    private static String internalURLEncode(String s)
+    {
+        try
+        {
             return URLEncoder.encode(s, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
+        }
+        catch (UnsupportedEncodingException e)
+        {
             throw new RuntimeException("UTF-8 encoding is not supported by URLEncoder.", e);
         }
     }
@@ -83,14 +87,19 @@ public final class GoogleAuthenticatorQRGenerator {
      *
      * @see <a href="https://code.google.com/p/google-authenticator/wiki/KeyUriFormat">Google Authenticator - KeyUriFormat</a>
      */
-    private static String formatLabel(String issuer, String accountName) {
-        if (accountName == null || accountName.trim().length() == 0) {
+    private static String formatLabel(String issuer, String accountName)
+    {
+        if (accountName == null || accountName.trim().length() == 0)
+        {
             throw new IllegalArgumentException("Account name must not be empty.");
         }
-        
+
         StringBuilder sb = new StringBuilder();
-        if (issuer != null) {
-            if (issuer.contains(":")) {
+
+        if (issuer != null)
+        {
+            if (issuer.contains(":"))
+            {
                 throw new IllegalArgumentException("Issuer cannot contain the \':\' character.");
             }
 
@@ -126,7 +135,8 @@ public final class GoogleAuthenticatorQRGenerator {
      */
     public static String getOtpAuthURL(String issuer,
                                        String accountName,
-                                       GoogleAuthenticatorKey credentials) {
+                                       GoogleAuthenticatorKey credentials)
+    {
 
         return String.format(
                 TOTP_URI_FORMAT,
@@ -149,37 +159,51 @@ public final class GoogleAuthenticatorQRGenerator {
      * @param accountName The account name. This parameter shall not be null.
      * @param credentials The generated credentials.  This parameter shall not be null.
      * @return an otpauth scheme URI for loading into a client application.
-     * @see <a href="https://code.google.com/p/google-authenticator/wiki/KeyUriFormat">Google Authenticator - KeyUriFormat</a>
+     * @see <a href="https://github.com/google/google-authenticator/wiki/Key-Uri-Format">Google Authenticator - KeyUriFormat</a>
      */
     public static String getOtpAuthTotpURL(String issuer,
                                            String accountName,
-                                           GoogleAuthenticatorKey credentials) {
-        
+                                           GoogleAuthenticatorKey credentials)
+    {
         URIBuilder uri = new URIBuilder()
-            .setScheme("otpauth")
-            .setHost("totp")
-            .setPath("/" + formatLabel(issuer, accountName))
-            .setParameter("secret", credentials.getKey());
+                .setScheme("otpauth")
+                .setHost("totp")
+                .setPath("/" + formatLabel(issuer, accountName))
+                .setParameter("secret", credentials.getKey());
 
-
-        if (issuer != null) {
-            if (issuer.contains(":")) {
+        if (issuer != null)
+        {
+            if (issuer.contains(":"))
+            {
                 throw new IllegalArgumentException("Issuer cannot contain the \':\' character.");
             }
 
             uri.setParameter("issuer", issuer);
         }
-        
-        /*
-            The following parameters aren't needed since they are all defaults.
-            We can exclude them to make the URI shorter.
-         */
-        // uri.setParameter("algorithm", "SHA1");
-        // uri.setParameter("digits", "6");
-        // uri.setParameter("period", "30");
-        
-        return uri.toString();
 
+        final GoogleAuthenticatorConfig config = credentials.getConfig();
+        uri.setParameter("algorithm", getAlgorithmName(config.getHmacHashFunction()));
+        uri.setParameter("digits", String.valueOf(config.getCodeDigits()));
+        uri.setParameter("period", String.valueOf((int) (config.getTimeStepSizeInMillis() / 1000)));
+
+        return uri.toString();
     }
-    
+
+    private static String getAlgorithmName(HmacHashFunction hashFunction)
+    {
+        switch (hashFunction)
+        {
+            case HmacSHA1:
+                return "SHA1";
+
+            case HmacSHA256:
+                return "SHA256";
+
+            case HmacSHA512:
+                return "SHA512";
+
+            default:
+                throw new IllegalArgumentException(String.format("Unknown algorithm %s", hashFunction));
+        }
+    }
 }

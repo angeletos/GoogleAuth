@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 Enrico M. Crisostomo
+ * Copyright (c) 2014-2017 Enrico M. Crisostomo
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,19 +32,22 @@ package com.warrenstrange.googleauth;
 
 import java.util.concurrent.TimeUnit;
 
-public class GoogleAuthenticatorConfig {
+public class GoogleAuthenticatorConfig
+{
     private long timeStepSizeInMillis = TimeUnit.SECONDS.toMillis(30);
     private int windowSize = 3;
     private int codeDigits = 6;
     private int keyModulus = (int) Math.pow(10, codeDigits);
     private KeyRepresentation keyRepresentation = KeyRepresentation.BASE32;
+    private HmacHashFunction hmacHashFunction = HmacHashFunction.HmacSHA1;
 
     /**
      * Returns the key module.
      *
      * @return the key module.
      */
-    public int getKeyModulus() {
+    public int getKeyModulus()
+    {
         return keyModulus;
     }
 
@@ -53,7 +56,8 @@ public class GoogleAuthenticatorConfig {
      *
      * @return the key representation.
      */
-    public KeyRepresentation getKeyRepresentation() {
+    public KeyRepresentation getKeyRepresentation()
+    {
         return keyRepresentation;
     }
 
@@ -63,7 +67,8 @@ public class GoogleAuthenticatorConfig {
      * @return the number of digits in the generated code.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public int getCodeDigits() {
+    public int getCodeDigits()
+    {
         return codeDigits;
     }
 
@@ -73,7 +78,8 @@ public class GoogleAuthenticatorConfig {
      *
      * @return the time step size in milliseconds.
      */
-    public long getTimeStepSizeInMillis() {
+    public long getTimeStepSizeInMillis()
+    {
         return timeStepSizeInMillis;
     }
 
@@ -91,27 +97,47 @@ public class GoogleAuthenticatorConfig {
      * @return the window size.
      * @see #timeStepSizeInMillis
      */
-    public int getWindowSize() {
+    public int getWindowSize()
+    {
         return windowSize;
     }
 
-    public static class GoogleAuthenticatorConfigBuilder {
+    /**
+     * Returns the cryptographic hash function used to calculate the HMAC (Hash-based
+     * Message Authentication Code). This implementation uses the SHA1 hash
+     * function by default.
+     * <p/>
+     *
+     * @return the HMAC hash function.
+     */
+    public HmacHashFunction getHmacHashFunction()
+    {
+        return hmacHashFunction;
+    }
+
+    public static class GoogleAuthenticatorConfigBuilder
+    {
         private GoogleAuthenticatorConfig config = new GoogleAuthenticatorConfig();
 
-        public GoogleAuthenticatorConfig build() {
+        public GoogleAuthenticatorConfig build()
+        {
             return config;
         }
 
-        public GoogleAuthenticatorConfigBuilder setCodeDigits(int codeDigits) {
-            if (codeDigits <= 0) {
+        public GoogleAuthenticatorConfigBuilder setCodeDigits(int codeDigits)
+        {
+            if (codeDigits <= 0)
+            {
                 throw new IllegalArgumentException("Code digits must be positive.");
             }
 
-            if (codeDigits < 6) {
+            if (codeDigits < 6)
+            {
                 throw new IllegalArgumentException("The minimum number of digits is 6.");
             }
 
-            if (codeDigits > 8) {
+            if (codeDigits > 8)
+            {
                 throw new IllegalArgumentException("The maximum number of digits is 8.");
             }
 
@@ -120,8 +146,10 @@ public class GoogleAuthenticatorConfig {
             return this;
         }
 
-        public GoogleAuthenticatorConfigBuilder setTimeStepSizeInMillis(long timeStepSizeInMillis) {
-            if (timeStepSizeInMillis <= 0) {
+        public GoogleAuthenticatorConfigBuilder setTimeStepSizeInMillis(long timeStepSizeInMillis)
+        {
+            if (timeStepSizeInMillis <= 0)
+            {
                 throw new IllegalArgumentException("Time step size must be positive.");
             }
 
@@ -129,8 +157,10 @@ public class GoogleAuthenticatorConfig {
             return this;
         }
 
-        public GoogleAuthenticatorConfigBuilder setWindowSize(int windowSize) {
-            if (windowSize <= 0) {
+        public GoogleAuthenticatorConfigBuilder setWindowSize(int windowSize)
+        {
+            if (windowSize <= 0)
+            {
                 throw new IllegalArgumentException("Window number must be positive.");
             }
 
@@ -138,12 +168,25 @@ public class GoogleAuthenticatorConfig {
             return this;
         }
 
-        public GoogleAuthenticatorConfigBuilder setKeyRepresentation(KeyRepresentation keyRepresentation) {
-            if (keyRepresentation == null) {
+        public GoogleAuthenticatorConfigBuilder setKeyRepresentation(KeyRepresentation keyRepresentation)
+        {
+            if (keyRepresentation == null)
+            {
                 throw new IllegalArgumentException("Key representation cannot be null.");
             }
 
             config.keyRepresentation = keyRepresentation;
+            return this;
+        }
+
+        public GoogleAuthenticatorConfigBuilder setHmacHashFunction(HmacHashFunction hmacHashFunction)
+        {
+            if (hmacHashFunction == null)
+            {
+                throw new IllegalArgumentException("HMAC Hash Function cannot be null.");
+            }
+
+            config.hmacHashFunction = hmacHashFunction;
             return this;
         }
     }

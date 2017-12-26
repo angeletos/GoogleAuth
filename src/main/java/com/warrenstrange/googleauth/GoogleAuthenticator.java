@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Enrico M. Crisostomo
+ * Copyright (c) 2014-2017 Enrico M. Crisostomo
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,7 +67,7 @@ import java.util.logging.Logger;
  *
  * @author Enrico M. Crisostomo
  * @author Warren Strange
- * @version 0.5.0
+ * @version 1.1.4
  * @see <a href="http://thegreyblog.blogspot.com/2011/12/google-authenticator-using-it-in-your.html" />
  * @see <a href="http://code.google.com/p/google-authenticator" />
  * @see <a href="http://tools.ietf.org/id/draft-mraihi-totp-timebased-06.txt" />
@@ -145,13 +145,6 @@ public final class GoogleAuthenticator implements IGoogleAuthenticator
      * @since 0.5.0
      */
     private static final String DEFAULT_RANDOM_NUMBER_ALGORITHM_PROVIDER = "SUN";
-
-    /**
-     * Cryptographic hash function used to calculate the HMAC (Hash-based
-     * Message Authentication Code). This implementation uses the SHA1 hash
-     * function.
-     */
-    private static final String HMAC_HASH_FUNCTION = "HmacSHA1";
 
     /**
      * The configuration used by the current instance.
@@ -234,12 +227,12 @@ public final class GoogleAuthenticator implements IGoogleAuthenticator
         }
 
         // Building the secret key specification for the HmacSHA1 algorithm.
-        SecretKeySpec signKey = new SecretKeySpec(key, HMAC_HASH_FUNCTION);
+        SecretKeySpec signKey = new SecretKeySpec(key, config.getHmacHashFunction().toString());
 
         try
         {
-            // Getting an HmacSHA1 algorithm implementation from the JCE.
-            Mac mac = Mac.getInstance(HMAC_HASH_FUNCTION);
+            // Getting an HmacSHA1/HmacSHA256 algorithm implementation from the JCE.
+            Mac mac = Mac.getInstance(config.getHmacHashFunction().toString());
 
             // Initializing the MAC algorithm.
             mac.init(signKey);
@@ -339,7 +332,9 @@ public final class GoogleAuthenticator implements IGoogleAuthenticator
         {
             case BASE32:
                 Base32 codec32 = new Base32();
-                return codec32.decode(secret);
+                // See: https://issues.apache.org/jira/browse/CODEC-234
+                // Commons Codec Base32::decode does not support lowercase letters.
+                return codec32.decode(secret.toUpperCase());
             case BASE64:
                 Base64 codec64 = new Base64();
                 return codec64.decode(secret);
@@ -369,10 +364,13 @@ public final class GoogleAuthenticator implements IGoogleAuthenticator
         // Calculate scratch codes
         List<Integer> scratchCodes = calculateScratchCodes(buffer);
 
-        return new GoogleAuthenticatorKey(
-                generatedKey,
-                validationCode,
-                scratchCodes);
+        return
+                new GoogleAuthenticatorKey
+                        .Builder(generatedKey)
+                        .setConfig(config)
+                        .setVerificationCode(validationCode)
+                        .setScratchCodes(scratchCodes)
+                        .build();
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 Enrico M. Crisostomo
+ * Copyright (c) 2014-2017 Enrico M. Crisostomo
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,20 +43,16 @@ import java.util.List;
  * library.
  *
  * @author Enrico M. Crisostomo
- * @version 1.0
+ * @version 1.1.4
  * @see GoogleAuthenticator
- * @since 1.0
+ * @since 1.0.0
  */
-public final class GoogleAuthenticatorKey {
-
+public final class GoogleAuthenticatorKey
+{
     /**
-     * The format string to generate the URL of a Google-provided QR bar code.
-     *
-     * @deprecated Use GoogleAuthenticatorQRGenerator instead.
+     * The configuration of this key.
      */
-    private static final String QR_FORMAT =
-            "https://chart.googleapis.com/chart?chs=200x200&chld=M%%7C0&cht=qr&"
-                    + "chl=otpauth://totp/%s@%s%%3Fsecret%%3D%s";
+    private final GoogleAuthenticatorConfig config;
 
     /**
      * The secret key in Base32 encoding.
@@ -74,35 +70,37 @@ public final class GoogleAuthenticatorKey {
     private final List<Integer> scratchCodes;
 
     /**
-     * The constructor with package visibility.
+     * The private constructor of this class.
      *
-     * @param secretKey    the secret key in Base32 encoding.
-     * @param code         the verification code at time = 0 (the UNIX epoch).
-     * @param scratchCodes the list of scratch codes.
+     * @param config           the configuration of the TOTP algorithm.
+     * @param key              the secret key in Base32 encoding.
+     * @param verificationCode the verification code at time = 0 (the UNIX epoch).
+     * @param scratchCodes     the list of scratch codes.
      */
-    /* package */ GoogleAuthenticatorKey(
-            String secretKey, int code,
-            List<Integer> scratchCodes) {
-        key = secretKey;
-        verificationCode = code;
-        this.scratchCodes = new ArrayList<>(scratchCodes);
-    }
+    private GoogleAuthenticatorKey(GoogleAuthenticatorConfig config,
+                                   String key,
+                                   int verificationCode,
+                                   List<Integer> scratchCodes)
+    {
+        if (key == null)
+        {
+            throw new IllegalArgumentException("Key cannot be null");
+        }
 
-    /**
-     * Returns the URL of a Google-provided QR barcode to be loaded into the
-     * Google Authenticator application. The user scans this bar code with the
-     * application on their smart phones or manually enter the secret manually.
-     *
-     * @param user   the user to assign the secret key to.
-     * @param host   the host to assign the secret key to.
-     * @param secret the secret key in Base32 encoding.
-     * @return the URL of a Google-provided QR barcode to be loaded into the
-     * Google Authenticator application.
-     * @deprecated Use GoogleAuthenticatorQRGenerator##getOtpAuthURL instead.
-     */
-    @SuppressWarnings("deprecation, unused")
-    public static String getQRBarcodeURL(String user, String host, String secret) {
-        return String.format(QR_FORMAT, user, host, secret);
+        if (config == null)
+        {
+            throw new IllegalArgumentException("Configuration cannot be null");
+        }
+
+        if (scratchCodes == null)
+        {
+            throw new IllegalArgumentException("Scratch codes cannot be null");
+        }
+
+        this.config = config;
+        this.key = key;
+        this.verificationCode = verificationCode;
+        this.scratchCodes = new ArrayList<>(scratchCodes);
     }
 
     /**
@@ -110,8 +108,19 @@ public final class GoogleAuthenticatorKey {
      *
      * @return the list of scratch codes.
      */
-    public List<Integer> getScratchCodes() {
+    public List<Integer> getScratchCodes()
+    {
         return scratchCodes;
+    }
+
+    /**
+     * Get the config of this key.
+     *
+     * @return the config of this key.
+     */
+    public GoogleAuthenticatorConfig getConfig()
+    {
+        return config;
     }
 
     /**
@@ -119,7 +128,8 @@ public final class GoogleAuthenticatorKey {
      *
      * @return the secret key in Base32 encoding.
      */
-    public String getKey() {
+    public String getKey()
+    {
         return key;
     }
 
@@ -128,7 +138,89 @@ public final class GoogleAuthenticatorKey {
      *
      * @return the verificationCode at time = 0 (the UNIX epoch).
      */
-    public int getVerificationCode() {
+    public int getVerificationCode()
+    {
         return verificationCode;
+    }
+
+    /**
+     * This class is a builder to create instances of the {@link GoogleAuthenticatorKey} class.
+     */
+    public static class Builder
+    {
+        private GoogleAuthenticatorConfig config = new GoogleAuthenticatorConfig();
+        private String key;
+        private int verificationCode;
+        private List<Integer> scratchCodes = new ArrayList<>();
+
+        /**
+         * Creates an instance of the builder.
+         *
+         * @param key the secret key in Base32 encoding.
+         * @see GoogleAuthenticatorKey#GoogleAuthenticatorKey(GoogleAuthenticatorConfig, String, int, List)
+         */
+        public Builder(String key)
+        {
+            this.key = key;
+        }
+
+        /**
+         * Creates an instance of the {@link GoogleAuthenticatorKey} class.
+         *
+         * @return an instance of the {@link GoogleAuthenticatorKey} class initialized with the properties set in this builder.
+         * @see GoogleAuthenticatorKey#GoogleAuthenticatorKey(GoogleAuthenticatorConfig, String, int, List)
+         */
+        public GoogleAuthenticatorKey build()
+        {
+            return new GoogleAuthenticatorKey(config, key, verificationCode, scratchCodes);
+        }
+
+        /**
+         * Sets the config of the TOTP algorithm for this key.
+         *
+         * @param config the config of the TOTP algorithm for this key.
+         * @see GoogleAuthenticatorKey#GoogleAuthenticatorKey(GoogleAuthenticatorConfig, String, int, List)
+         */
+        public Builder setConfig(GoogleAuthenticatorConfig config)
+        {
+            this.config = config;
+            return this;
+        }
+
+        /**
+         * Sets the secret key.
+         *
+         * @param key the secret key.
+         * @see GoogleAuthenticatorKey#GoogleAuthenticatorKey(GoogleAuthenticatorConfig, String, int, List)
+         */
+        public Builder setKey(String key)
+        {
+            this.key = key;
+            return this;
+        }
+
+        /**
+         * Sets the verification code.
+         *
+         * @param verificationCode the verification code.
+         * @see GoogleAuthenticatorKey#GoogleAuthenticatorKey(GoogleAuthenticatorConfig, String, int, List)
+         */
+        public Builder setVerificationCode(int verificationCode)
+        {
+            this.verificationCode = verificationCode;
+            return this;
+        }
+
+        /**
+         * Sets the scratch codes.
+         *
+         * @param scratchCodes the scratch codes.
+         * @see GoogleAuthenticatorKey#GoogleAuthenticatorKey(GoogleAuthenticatorConfig, String, int, List)
+         */
+        public Builder setScratchCodes(List<Integer> scratchCodes)
+        {
+            this.scratchCodes = scratchCodes;
+            return this;
+        }
     }
 }
